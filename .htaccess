@@ -1,0 +1,19 @@
+# The .htaccess file for the ACPTech project
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect to the index.php file for all requests
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [L]
+
+    # Optional: Set default character set
+    AddDefaultCharset UTF-8
+</IfModule>
+
+# Deny access to sensitive files
+<FilesMatch "\.(ini|log|htaccess|env)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
