@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <link rel="stylesheet" href="/src/style/style.css">
+    <meta name="google-site-verification" content="p0y4MBB087_b3qE61N0WEgWpKppbGeQUDSdsYuv1V-Q" />
     <title>Document</title>
 </head>
 <body>
