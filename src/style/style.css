@@ -186,6 +186,12 @@ h2 {
   background-color: #0d0d0d;
 }
 
+.pub{
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
 
 
 @media (max-width: 700px) {
