@@ -42,6 +42,8 @@
   </ul>
 </nav>
    </header>
+
+<script src="/src/script/animation.js"></script>
 </div>
 </body>
 </html>
