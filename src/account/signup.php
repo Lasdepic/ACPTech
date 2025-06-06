@@ -4,27 +4,58 @@ session_start();
 $error = '';
 $success = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Récupère les données du formulaire
+try {
+    $config = require __DIR__ . '/../account/dp.php';
+    $pdo = new PDO(
+        "mysql:host={$config['host']};dbname={$config['dbname']};charset=utf8mb4",
+        $config['user'],
+        $config['pass']
+    );
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    $error = "Erreur de connexion à la base de données.";
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
+    $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm = $_POST['confirm'] ?? '';
 
-    // Validation simple
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (strlen($username) < 3 || strlen($username) > 32 || !preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        $error = "Le pseudo doit faire entre 3 et 32 caractères et ne contenir que des lettres, chiffres ou '_'.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Adresse email invalide.";
     } elseif (strlen($password) < 8) {
         $error = "Le mot de passe doit contenir au moins 8 caractères.";
+    } elseif (!preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+        $error = "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.";
     } elseif ($password !== $confirm) {
         $error = "Les mots de passe ne correspondent pas.";
     } else {
-        if ($email === 'admin@example.com') {
-            $error = "Cet email est déjà utilisé.";
+        
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        if ($stmt->fetch()) {
+            $error = "Ce pseudo est déjà utilisé.";
         } else {
-            $success = "Compte créé avec succès ! Vous pouvez maintenant vous connecter.";
-            // Vous pouvez ici enregistrer l'utilisateur dans la base de données
+            
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                $error = "Cet email est déjà utilisé.";
+            } else {
+                $hash = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+                if ($stmt->execute([$username, $email, $hash])) {
+                    $success = "Compte créé avec succès ! Vous pouvez maintenant vous connecter.";
+                } else {
+                    $error = "Erreur lors de la création du compte.";
+                }
+            }
         }
     }
+    usleep(500000); 
 }
 ?>
 <!DOCTYPE html>
@@ -32,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pilotes Graphiques</title>
+  <title>Créer un compte</title>
   <link rel="stylesheet" href="/src/style/style.css" />
 </head>
 <body>
@@ -47,8 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="color:#00fcd3;text-align:center;margin-bottom:16px;"><?= htmlspecialchars($success) ?></div>
         <?php endif; ?>
         <form method="post" autocomplete="off">
+            <label for="username">Pseudo</label><br>
+            <input type="text" id="username" name="username" required style="width:100%;padding:10px;margin:10px 0 20px 0;border-radius:6px;border:1px solid #00fcd3;background:#13161d;color:#d6dee6;" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"><br>
+
             <label for="email">Email</label><br>
-            <input type="email" id="email" name="email" required style="width:100%;padding:10px;margin:10px 0 20px 0;border-radius:6px;border:1px solid #00fcd3;background:#13161d;color:#d6dee6;"><br>
+            <input type="email" id="email" name="email" required style="width:100%;padding:10px;margin:10px 0 20px 0;border-radius:6px;border:1px solid #00fcd3;background:#13161d;color:#d6dee6;" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"><br>
             
             <label for="password">Mot de passe</label><br>
             <input type="password" id="password" name="password" required style="width:100%;padding:10px;margin:10px 0 20px 0;border-radius:6px;border:1px solid #00fcd3;background:#13161d;color:#d6dee6;"><br>
@@ -64,6 +98,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </body>
 </html>
-
-
-
