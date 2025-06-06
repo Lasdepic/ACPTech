@@ -30,7 +30,7 @@
     <li class="dropdown">
   <a href="/src/pages/retogaming.php">Retro Gaming</a>
   <ul class="dropdown-content">
-    <li><a href="/src/pages/RetroGaming/retrobat.php">Retobat</a></li>
+    <li><a href="/src/pages/RetroGaming/retrobat.php">Retrobat</a></li>
     <li><a href="/src/pages/RetroGaming/retroArch.php">RetroArche</a></li>
     <li><a href="/src/pages/RetroGaming/playstation.php">PlayStation</a></li>
     <li><a href="/src/pages/RetroGaming/xbox.php">Xbox</a></li>
