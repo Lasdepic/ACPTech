@@ -27,6 +27,7 @@
     </li>
     <li><a href="/src/pages/UserDiag.php">User Diag</a></li>
     <li><a href="/src/pages/monitoring.php">Monitoring</a></li>
+    <li><a href="/src/pages/forum/forum.php">Forum</a></li>
     <li class="dropdown">
   <a href="/src/pages/retogaming.php">Retro Gaming</a>
   <ul class="dropdown-content">
@@ -41,9 +42,17 @@
 </li>
   </ul>
    <div class="account-actions">
-  <a href="/src/account/signin.php">Connexion</a>
-  <a href="/src/account/signup.php">Inscription</a>
-</div>
+    <?php
+      if (session_status() === PHP_SESSION_NONE) session_start();
+      if (isset($_SESSION['user'])):
+    ?>
+      <a href="/src/config/myAccount.php">Mon compte</a>
+      <a href="/src/account/signout.php">Déconnexion</a>
+    <?php else: ?>
+      <a href="/src/account/login.php">Connexion</a>
+      <a href="/src/account/signup.php">Inscription</a>
+    <?php endif; ?>
+  </div>
 </nav>
    </header>
 <script src="/src/script/animation.js"></script>

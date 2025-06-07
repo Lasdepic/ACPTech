@@ -8,7 +8,18 @@ if (!isset($_SESSION['user'])) {
 
 $error = '';
 $success = '';
-$avatarPath = '';
+$showChangePassword = false;
+$showDeleteAccount = false;
+
+// Gestion de l'affichage des formulaires après POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['show_change_password'])) {
+        $showChangePassword = true;
+    }
+    if (isset($_POST['show_delete_account'])) {
+        $showDeleteAccount = true;
+    }
+}
 
 try {
     $config = require __DIR__ . '/../config/var/dp.php';
@@ -20,7 +31,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Récupère les infos de l'utilisateur connecté
-    $stmt = $pdo->prepare("SELECT id, username, email, avatar FROM users WHERE username = ?");
+    $stmt = $pdo->prepare("SELECT id, username, email FROM users WHERE username = ?");
     $stmt->execute([$_SESSION['user']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -30,36 +41,46 @@ try {
         exit;
     }
 
-    $avatarPath = $user['avatar'] ?? '';
+    // Changement de mot de passe
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
+        $showChangePassword = true;
+        $current = $_POST['current_password'] ?? '';
+        $new = $_POST['new_password'] ?? '';
+        $confirm = $_POST['confirm_password'] ?? '';
 
-    // Gestion de l'upload d'avatar
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-        $file = $_FILES['avatar'];
-        $allowed = ['jpg', 'jpeg', 'png', 'gif'];
-        $maxSize = 2 * 1024 * 1024; // 2 Mo
+        $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+        $stmt->execute([$user['id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, $allowed)) {
-            $error = "Format de fichier non autorisé (jpg, jpeg, png, gif).";
-        } elseif ($file['size'] > $maxSize) {
-            $error = "Fichier trop volumineux (max 2 Mo).";
+        if (!$row || !password_verify($current, $row['password'])) {
+            $error = "Mot de passe actuel incorrect.";
+        } elseif (strlen($new) < 8) {
+            $error = "Le nouveau mot de passe doit contenir au moins 8 caractères.";
+        } elseif (!preg_match('/[A-Z]/', $new) || !preg_match('/[a-z]/', $new) || !preg_match('/[0-9]/', $new)) {
+            $error = "Le nouveau mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.";
+        } elseif ($new !== $confirm) {
+            $error = "Les nouveaux mots de passe ne correspondent pas.";
         } else {
-            $uploadDir = __DIR__ . '/../uploads/avatars/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            $filename = 'avatar_' . $user['id'] . '_' . time() . '.' . $ext;
-            $dest = $uploadDir . $filename;
-            if (move_uploaded_file($file['tmp_name'], $dest)) {
-                // Met à jour le chemin de l'avatar en base
-                $avatarUrl = '/src/uploads/avatars/' . $filename;
-                $stmt = $pdo->prepare("UPDATE users SET avatar = ? WHERE id = ?");
-                $stmt->execute([$avatarUrl, $user['id']]);
-                $success = "Avatar mis à jour avec succès.";
-                $avatarPath = $avatarUrl;
-            } else {
-                $error = "Erreur lors de l'upload du fichier.";
-            }
+            $hash = password_hash($new, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $stmt->execute([$hash, $user['id']]);
+            $success = "Mot de passe modifié avec succès.";
+            $showChangePassword = false;
+        }
+    }
+
+    // Suppression du compte
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
+        $showDeleteAccount = true;
+        $confirmDelete = $_POST['confirm_delete'] ?? '';
+        if ($confirmDelete === 'SUPPRIMER') {
+            $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+            $stmt->execute([$user['id']]);
+            session_destroy();
+            header('Location: /index.php');
+            exit;
+        } else {
+            $error = "Veuillez écrire SUPPRIMER pour confirmer la suppression.";
         }
     }
 } catch (PDOException $e) {
@@ -77,31 +98,51 @@ try {
 <body>
     <?php include($_SERVER['DOCUMENT_ROOT'] . "/src/template/template.php"); ?>
 
-    <div class="container" style="max-width:500px;margin-top:100px;">
+    <div class="container" style="max-width:500px;">
         <h2>Mon compte</h2>
         <?php if ($error): ?>
-            <div style="color:#ff4d4f;text-align:center;margin-bottom:16px;"><?= htmlspecialchars($error) ?></div>
+            <div class="account-message error"><?= htmlspecialchars($error) ?></div>
         <?php elseif ($success): ?>
-            <div style="color:#00fcd3;text-align:center;margin-bottom:16px;"><?= htmlspecialchars($success) ?></div>
+            <div class="account-message success"><?= htmlspecialchars($success) ?></div>
         <?php endif; ?>
 
-        <div style="text-align:center;margin-bottom:24px;">
-            <?php if ($avatarPath): ?>
-                <img src="<?= htmlspecialchars($avatarPath) ?>" alt="Avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:2px solid #00fcd3;">
-            <?php else: ?>
-                <img src="/src/uploads/avatars/default.png" alt="Avatar" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:2px solid #00fcd3;">
+        <div class="account-info">
+            <strong>Pseudo :</strong> <?= htmlspecialchars($user['username']) ?><br>
+            <strong>Email :</strong> <?= htmlspecialchars($user['email']) ?>
+        </div>
+
+        <div class="toggle-section">
+            <form method="post" class="toggle-form-btn">
+                <button type="submit" name="show_change_password" class="toggle-btn">Changer le mot de passe</button>
+            </form>
+            <?php if ($showChangePassword): ?>
+            <form method="post" class="toggle-form">
+                <label for="current_password">Mot de passe actuel</label>
+                <input type="password" id="current_password" name="current_password" required>
+
+                <label for="new_password">Nouveau mot de passe</label>
+                <input type="password" id="new_password" name="new_password" required>
+
+                <label for="confirm_password">Confirmer le nouveau mot de passe</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+
+                <button type="submit" name="change_password" class="btn-download">Valider le changement</button>
+            </form>
             <?php endif; ?>
         </div>
 
-        <form method="post" enctype="multipart/form-data" style="text-align:center;">
-            <label for="avatar">Changer d'avatar :</label><br>
-            <input type="file" name="avatar" id="avatar" accept=".jpg,.jpeg,.png,.gif" required><br>
-            <button type="submit" class="btn-download" style="margin-top:12px;">Mettre à jour</button>
-        </form>
-
-        <div style="margin-top:32px;">
-            <strong>Pseudo :</strong> <?= htmlspecialchars($user['username']) ?><br>
-            <strong>Email :</strong> <?= htmlspecialchars($user['email']) ?><br>
+        <div class="toggle-section">
+            <form method="post" class="toggle-form-btn">
+                <button type="submit" name="show_delete_account" class="toggle-btn danger-btn">Supprimer mon compte</button>
+            </form>
+            <?php if ($showDeleteAccount): ?>
+            <form method="post" class="toggle-form" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.');">
+                <p class="danger-text">Attention : cette action est définitive.<br>
+                Pour confirmer, tapez <strong>SUPPRIMER</strong> ci-dessous.</p>
+                <input type="text" name="confirm_delete" placeholder="Tapez SUPPRIMER" required>
+                <button type="submit" name="delete_account" class="btn-download danger-btn">Supprimer mon compte</button>
+            </form>
+            <?php endif; ?>
         </div>
     </div>
 </body>

@@ -152,8 +152,8 @@ h2 {
   width: fit-content;
   margin: 20px auto; 
   padding: 12px 24px;
-  background-color: #007BFF;
-  color: #fff;
+  background-color: #00fcd3;
+  color: #000000;
   text-decoration: none;
   border-radius: 8px;
   font-weight: bold;
@@ -233,6 +233,80 @@ h2 {
     color: #fff;
     border: 1px solid #00fcd3;
 }
+
+/* Ajout pour la page Mon Compte */
+.account-message {
+    text-align: center;
+    margin-bottom: 16px;
+    padding: 10px 0;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.account-message.error { color: #ff4d4f; background: #2a181a; }
+.account-message.success { color: #00fcd3; background: #182a28; }
+
+.account-info {
+    margin-bottom: 32px;
+    font-size: 1.1em;
+}
+
+.toggle-section {
+    margin-bottom: 32px;
+}
+
+.toggle-btn {
+    width: 100%;
+    padding: 12px;
+    background: #00fcd3;
+    color: #13161d;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.toggle-btn:hover { background: #00c9a7; }
+.danger-btn { background: #ff4d4f !important; color: #fff !important; }
+.danger-btn:hover { background: #d9363e !important; }
+
+.toggle-form {
+    animation: fadeIn 0.3s;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.toggle-form label {
+    margin-bottom: 2px;
+    color: #00fcd3;
+    font-weight: 500;
+}
+.toggle-form input[type="password"],
+.toggle-form input[type="text"],
+.toggle-form input[type="email"],
+.toggle-form input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #00fcd3;
+    background: #13161d;
+    color: #d6dee6;
+    margin-bottom: 8px;
+    font-size: 1em;
+}
+.toggle-form .danger-btn {
+    background: #ff4d4f;
+    border: none;
+}
+.danger-text {
+    font-size: 15px;
+    color: #ff4d4f;
+    margin-bottom: 8px;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: none; } }
 
 
 
